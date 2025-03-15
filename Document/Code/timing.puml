@@ -1,0 +1,19 @@
+@startuml
+actor 用户
+participant "系统" as 系统
+participant "URDF解析器" as URDF解析器
+participant "Web 3D引擎" as Web3D引擎
+
+用户 -> 系统: 上传URDF文件
+系统 -> URDF解析器: 解析URDF文件
+URDF解析器 --> 系统: 返回解析后的模型数据
+系统 -> Web3D引擎: 加载模型并渲染
+用户 -> 系统: 操作控制面板（如旋转、缩放、关节控制）
+系统 -> Web3D引擎: 更新模型状态
+Web3D引擎 --> 系统: 返回渲染结果
+系统 --> 用户: 显示更新后的模型
+用户 -> 系统: 查看状态信息
+系统 -> URDF解析器: 获取机器人状态
+URDF解析器 --> 系统: 返回状态数据
+系统 --> 用户: 显示状态信息
+@enduml
