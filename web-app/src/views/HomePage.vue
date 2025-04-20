@@ -28,13 +28,30 @@
 export default {
   name: 'HomePage',
   methods: {
-    handleFileUpload(event) {
+    async handleFileUpload(event) {
       const file = event.target.files[0];
-      if (file) {
-        console.log('选择了文件:', file.name);
-        // 在这里处理文件上传逻辑
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const response = await fetch('http://localhost:5000/api/files/upload', {
+          method: 'POST',
+          body: formData
+          // 注意：不要手动设置 Content-Type，浏览器会自动处理 multipart/form-data
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+          console.log('上传成功:', result);
+        } else {
+          console.error('上传失败:', result.error);
+        }
+      } catch (error) {
+        console.error('请求错误:', error);
       }
-    }
+}
   }
 }
 </script>
