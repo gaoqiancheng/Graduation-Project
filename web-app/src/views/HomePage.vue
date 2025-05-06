@@ -4,11 +4,11 @@
     <div class="upload-container">
       <div class="button-group">
         <label for="file-upload" class="cyber-button">
-          上传文件
+          Upload File
           <input id="file-upload" type="file" @change="handleFileUpload" />
         </label>
         <button class="cyber-button" @click="handleFileBrowse">
-          浏览文件
+          Browse Files
         </button>
       </div>
     </div>
