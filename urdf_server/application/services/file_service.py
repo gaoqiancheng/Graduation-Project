@@ -1,7 +1,5 @@
 import os
-import subprocess
 from pathlib import Path
-
 from flask import current_app
 from ..utils.file_util import is_allowed_file
 from werkzeug.utils import secure_filename
@@ -54,46 +52,5 @@ def list_files(page=1, per_page=20):
             'total_pages': (total_files + per_page - 1) // per_page,
             'status': 200
         }
-    except Exception as e:
-        return {'error': str(e), 'status': 500}
-
-def start_urdf_visualization(filename):
-    try:
-        upload_folder = Path(current_app.config['UPLOAD_FOLDER'])
-        file_path = upload_folder / filename
-        
-        if not file_path.exists():
-            return {'error': 'File not found', 'status': 404}
-        
-        if not file_path.suffix.lower() == '.urdf':
-            return {'error': 'File is not a URDF file', 'status': 400}
-        
-        # 启动 URDF 可视化进程
-        try:
-            # 使用 subprocess 启动 urdf-viz 进程
-            process = subprocess.Popen(
-                ['urdf-viz', str(file_path)],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
-            
-            # 检查进程是否成功启动
-            if process.poll() is None:
-                return {
-                    'message': 'URDF visualization started successfully',
-                    'status': 200
-                }
-            else:
-                stdout, stderr = process.communicate()
-                return {
-                    'error': f'Failed to start visualization: {stderr.decode()}',
-                    'status': 500
-                }
-                
-        except FileNotFoundError:
-            return {'error': 'urdf-viz command not found. Please ensure it is installed.', 'status': 500}
-        except Exception as e:
-            return {'error': f'Error starting visualization: {str(e)}', 'status': 500}
-            
     except Exception as e:
         return {'error': str(e), 'status': 500}
