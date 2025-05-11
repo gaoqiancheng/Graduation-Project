@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+window.THREE = THREE; // 将 THREE 挂载到全局
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';

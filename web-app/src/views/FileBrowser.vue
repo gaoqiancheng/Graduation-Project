@@ -48,6 +48,18 @@
           <div v-if="visualizationStatus" class="status-message">
             {{ visualizationStatus }}
           </div>
+          <div v-if="showUrdfViewer" class="visualization-container">
+            <URDFViewer 
+              :urdfUrl="`http://localhost:5000/api/files/${selectedFile.name}`"
+            />
+          </div>
+          <button 
+            v-if="isVisualizationRunning" 
+            class="cyber-button stop-button" 
+            @click="stopVisualization"
+          >
+            Stop Visualization
+          </button>
         </div>
       </div>
     </div>
@@ -56,11 +68,13 @@
 
 <script>
 import BackgroundLayout from '@/components/BackgroundLayout.vue'
+import URDFViewer from '@/components/URDFViewer.vue'
 
 export default {
   name: 'FileBrowser',
   components: {
-    BackgroundLayout
+    BackgroundLayout,
+    URDFViewer
   },
   data() {
     return {
@@ -70,7 +84,12 @@ export default {
       loading: false,
       error: null,
       selectedFile: null,
-      visualizationStatus: null
+      visualizationStatus: null,
+      isVisualizationRunning: false,
+      visualizationUrl: 'http://127.0.0.1:7777',
+      retryCount: 0,
+      maxRetries: 5,
+      showUrdfViewer: false
     }
   },
   methods: {
@@ -95,26 +114,48 @@ export default {
     },
     async handleFileClick(file) {
       this.selectedFile = file
-      this.visualizationStatus = 'Starting visualization...'
+      this.showUrdfViewer = true
+      this.visualizationStatus = 'Loading URDF model...'
+      this.isVisualizationRunning = true
       
       try {
-        const response = await fetch('http://localhost:5000/api/urdf/visualize', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ filename: file.name })
+        console.log('Loading URDF model...')
+        const response = await fetch(`http://localhost:5000/api/files/${file.name}/content`)
+        const data = await response.json()
+        
+        if (response.ok) {
+          this.visualizationStatus = 'URDF model loaded successfully'
+          console.log('URDF model loaded successfully')
+        } else {
+          this.visualizationStatus = `Error: ${data.error || 'Failed to load URDF model'}`
+          this.isVisualizationRunning = false
+          this.showUrdfViewer = false
+          console.error('Failed to load URDF model:', data.error)
+        }
+      } catch (error) {
+        this.visualizationStatus = 'Network error while loading URDF model'
+        this.isVisualizationRunning = false
+        this.showUrdfViewer = false
+        console.error('Error loading URDF model:', error)
+      }
+    },
+    async stopVisualization() {
+      try {
+        const response = await fetch('http://localhost:5000/api/urdf/stop', {
+          method: 'POST'
         })
         
         const data = await response.json()
         if (response.ok) {
-          this.visualizationStatus = 'Visualization started successfully'
+          this.visualizationStatus = 'Visualization stopped successfully'
+          this.isVisualizationRunning = false
+          this.visualizationUrl = ''
         } else {
-          this.visualizationStatus = `Error: ${data.error || 'Failed to start visualization'}`
+          this.visualizationStatus = `Error: ${data.error || 'Failed to stop visualization'}`
         }
       } catch (error) {
-        this.visualizationStatus = 'Network error while starting visualization'
-        console.error('Error starting visualization:', error)
+        this.visualizationStatus = 'Network error while stopping visualization'
+        console.error('Error stopping visualization:', error)
       }
     },
     changePage(page) {
@@ -342,13 +383,57 @@ export default {
 .file-preview {
   padding: 20px;
   color: #d8b5ff;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.file-preview h3 {
+  margin-bottom: 15px;
+  color: #d8b5ff;
+  font-size: 1.2em;
 }
 
 .status-message {
-  margin-top: 10px;
+  margin-bottom: 15px;
   padding: 10px;
   background: rgba(159, 107, 255, 0.1);
   border: 1px solid rgba(216, 181, 255, 0.3);
   border-radius: 6px;
+}
+
+.stop-button {
+  margin-top: 15px;
+  align-self: flex-start;
+}
+
+.visualization-container {
+  margin-top: 20px;
+  width: 100%;
+  height: calc(100vh - 300px);
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(159, 107, 255, 0.2);
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+.visualization-frame {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+}
+
+.visualization-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+  z-index: 1;
 }
 </style>
