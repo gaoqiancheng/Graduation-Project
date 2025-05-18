@@ -1,9 +1,11 @@
 from flask import Blueprint, request, jsonify, send_file
 from werkzeug.utils import secure_filename
 from ..services.file_service import handle_file_upload, list_files
+from ..services.urdf_service import save_urdf_file
 import os
 from pathlib import Path
 from flask import current_app
+from datetime import datetime
 
 bp = Blueprint('file_api', __name__, url_prefix='/api/files')
 
@@ -32,7 +34,7 @@ def get_file(filename):
     try:
         file_path = Path(current_app.config['UPLOAD_FOLDER']) / filename
         if not file_path.exists():
-            return jsonify({'error': 'File not found'}), 404
+            return jsonify({'error': 'File not found', 'status': 404}), 404
         
         return send_file(
             file_path,
@@ -40,7 +42,7 @@ def get_file(filename):
             as_attachment=False
         )
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e), 'status': 500}), 500
 
 @bp.route('/<filename>/content', methods=['GET'])
 def get_file_content(filename):
@@ -58,3 +60,17 @@ def get_file_content(filename):
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@bp.route('/save', methods=['POST'])
+def save_urdf():
+    try:
+        data = request.get_json()
+        if not data or 'content' not in data or 'filename' not in data:
+            return jsonify({'error': 'Missing content or filename'}), 400
+        
+        filename = secure_filename(data['filename'])
+        result = save_urdf_file(data['content'], filename)
+        
+        return jsonify(result), result.get('status', 200)
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 500}), 500

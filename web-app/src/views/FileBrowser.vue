@@ -149,6 +149,7 @@ export default {
         if (response.ok) {
           this.visualizationStatus = 'Visualization stopped successfully'
           this.isVisualizationRunning = false
+          this.showUrdfViewer = false
           this.visualizationUrl = ''
         } else {
           this.visualizationStatus = `Error: ${data.error || 'Failed to stop visualization'}`

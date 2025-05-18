@@ -10,6 +10,16 @@
         <button class="cyber-button" @click="handleFileBrowse">
           Browse Files
         </button>
+        <button class="cyber-button" @click="handleCreateFile">
+          Create File
+        </button>
+      </div>
+    </div>
+    <!-- 添加成功提示弹窗 -->
+    <div v-if="showSuccess" class="success-notification">
+      <div class="notification-content">
+        <div class="notification-icon">✓</div>
+        <div class="notification-message">文件上传成功！</div>
       </div>
     </div>
   </BackgroundLayout>
@@ -22,9 +32,13 @@ export default {
   components: {
     BackgroundLayout
   },
+  data() {
+    return {
+      showSuccess: false
+    }
+  },
   methods: {
     async handleFileUpload(event) {
-      // 保持原有文件上传逻辑
       const file = event.target.files[0];
       if (!file) return;
 
@@ -40,6 +54,11 @@ export default {
         const result = await response.json();
         if (response.ok) {
           console.log('上传成功:', result);
+          this.showSuccess = true;
+          // 3秒后自动隐藏提示
+          setTimeout(() => {
+            this.showSuccess = false;
+          }, 3000);
         } else {
           console.error('上传失败:', result.error);
         }
@@ -49,6 +68,9 @@ export default {
     },
     handleFileBrowse() {
       this.$router.push('/browser')
+    },
+    handleCreateFile() {
+      this.$router.push('/create')
     }
   }
 }
@@ -124,6 +146,51 @@ export default {
 
 input[type="file"] {
   display: none;
+}
+
+/* 添加成功提示弹窗样式 */
+.success-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  animation: slideIn 0.3s ease-out;
+}
+
+.notification-content {
+  background: rgba(10, 10, 26, 0.9);
+  border: 2px solid rgba(159, 107, 255, 0.5);
+  border-radius: 8px;
+  padding: 15px 25px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  box-shadow: 0 0 20px rgba(159, 107, 255, 0.3);
+  backdrop-filter: blur(5px);
+}
+
+.notification-icon {
+  color: #9f6bff;
+  font-size: 24px;
+  text-shadow: 0 0 10px rgba(159, 107, 255, 0.7);
+}
+
+.notification-message {
+  color: #d8b5ff;
+  font-size: 16px;
+  font-family: 'Orbitron', sans-serif;
+  letter-spacing: 1px;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 @keyframes borderPulse {

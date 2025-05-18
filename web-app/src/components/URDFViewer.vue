@@ -101,6 +101,12 @@ export default {
         directionalLight.position.set(1, 1, 1)
         scene.add(directionalLight)
 
+        // 添加辅助网格和坐标轴
+        const gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x222222)
+        scene.add(gridHelper)
+        const axesHelper = new THREE.AxesHelper(5)
+        scene.add(axesHelper)
+
         console.log('Starting URDF model loading...')
         // 加载URDF模型
         const loader = new URDFLoader()
@@ -133,6 +139,35 @@ export default {
                 blobUrl,
                 (robot) => {
                   console.log('Successfully loaded URDF model')
+                  // 设置材质和渲染参数
+                  robot.traverse((child) => {
+                    if (child.isMesh) {
+                      // 设置材质
+                      if (child.material) {
+                        child.material.transparent = true
+                        child.material.opacity = 0.8
+                        child.material.metalness = 0.5
+                        child.material.roughness = 0.5
+                        child.material.envMapIntensity = 1.0
+                        
+                        // 添加边缘发光效果
+                        child.material.emissive = new THREE.Color(0x9f6bff)
+                        child.material.emissiveIntensity = 0.2
+                      }
+                      
+                      // 添加线框
+                      const wireframe = new THREE.LineSegments(
+                        new THREE.WireframeGeometry(child.geometry),
+                        new THREE.LineBasicMaterial({ 
+                          color: 0x9f6bff,
+                          transparent: true,
+                          opacity: 0.3
+                        })
+                      )
+                      child.add(wireframe)
+                    }
+                  })
+                  
                   // 清理 Blob URL
                   URL.revokeObjectURL(blobUrl)
                   resolve(robot)
@@ -165,6 +200,14 @@ export default {
         camera.position.set(center.x + cameraZ, center.y + cameraZ, center.z + cameraZ)
         camera.lookAt(center)
         controls.target.copy(center)
+
+        // 设置控制器参数
+        controls.enableDamping = true
+        controls.dampingFactor = 0.05
+        controls.screenSpacePanning = false
+        controls.minDistance = maxDim * 0.5
+        controls.maxDistance = maxDim * 3
+        controls.maxPolarAngle = Math.PI
 
         loading.value = false
         console.log('URDF viewer initialization completed')
