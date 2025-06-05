@@ -13,7 +13,5 @@ def create_app(config_class='config.Config'):
     
     # 注册蓝图
     from .blueprints import file_api
-    from .blueprints import urdf_api
     app.register_blueprint(file_api.bp)
-    app.register_blueprint(urdf_api.bp)
     return app

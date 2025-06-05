@@ -1,0 +1,101 @@
+@startuml URDFViewer Component
+
+' Styling
+skinparam componentStyle rectangle
+skinparam backgroundColor white
+skinparam stereotypeCBackgroundColor #A9DCDF
+skinparam componentBackgroundColor #FEFECE
+
+title URDF Viewer Component Structure and Workflow
+
+' Main Component
+component "URDFViewer.vue" as viewer {
+    component "Template" as template {
+        [Viewer Container]
+        [Loading Overlay]
+        [Error Overlay]
+    }
+    
+    component "Script" as script {
+        package "External Libraries" {
+            [Three.js]
+            [URDF Loader]
+            [OrbitControls]
+            [STLLoader]
+            [ColladaLoader]
+        }
+        
+        package "Component State" {
+            [viewerContainer ref]
+            [loading ref]
+            [error ref]
+        }
+        
+        package "Scene Objects" {
+            [Scene]
+            [Camera]
+            [Renderer]
+            [Controls]
+            [Robot Model]
+        }
+        
+        package "Core Functions" {
+            [initViewer()]
+            [clearScene()]
+            [loadFromUrl()]
+            [handleResize()]
+        }
+    }
+    
+    component "Style" as style {
+        [Container Styles]
+        [Overlay Styles]
+        [Animation Styles]
+    }
+}
+
+' External Dependencies
+database "URDF File" as urdf
+database "Mesh Files\n(STL/DAE)" as meshes
+
+' Relationships
+urdf --> viewer : Input
+meshes --> viewer : Load 3D Models
+
+[Three.js] --> [Scene] : Creates
+[URDF Loader] --> [Robot Model] : Loads
+[OrbitControls] --> [Controls] : Provides
+[STLLoader] --> [Robot Model] : Loads STL
+[ColladaLoader] --> [Robot Model] : Loads DAE
+
+[initViewer()] --> [Scene] : Initializes
+[initViewer()] --> [Camera] : Sets up
+[initViewer()] --> [Renderer] : Configures
+[initViewer()] --> [Controls] : Sets up
+[initViewer()] --> [Robot Model] : Loads
+
+[clearScene()] --> [Scene] : Cleans
+[handleResize()] --> [Camera] : Updates
+[handleResize()] --> [Renderer] : Resizes
+
+' Lifecycle
+note right of viewer
+Component Lifecycle:
+1. Mount
+2. Initialize Scene
+3. Load URDF
+4. Load Meshes
+5. Render Loop
+6. Handle User Interaction
+7. Cleanup on Unmount
+end note
+
+' Props
+note left of viewer
+Props:
+--
+urdfUrl: String
+urdfContent: String
+end note
+
+@enduml 

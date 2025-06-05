@@ -1,0 +1,190 @@
+@startuml URDFStructure
+
+skinparam class {
+    BackgroundColor LightBlue
+    BorderColor DarkBlue
+    BackgroundColor<<Required>> Pink
+    BorderColor<<Required>> Red
+    BackgroundColor<<Optional>> LightGreen
+    BorderColor<<Optional>> DarkGreen
+}
+
+title URDF (统一机器人描述格式) 结构图
+
+class robot <<Required>> {
+    + name: String    '机器人名称
+    + version: String '版本信息
+    ..说明..
+    这是URDF文件的根元素，
+    用于定义整个机器人的基本信息
+}
+
+class link <<Required>> {
+    + name: String    '链接名称
+    ..视觉属性..
+    + visual: Visual[]     '外观定义
+    + collision: Collision[] '碰撞检测形状
+    + inertial: Inertial   '惯性属性
+    ..说明..
+    代表机器人的一个刚体部分，
+    可以是手臂、底座等任何部件
+}
+
+class joint <<Required>> {
+    + name: String        '关节名称
+    + type: JointType     '关节类型
+    + origin: Origin      '原点位置
+    + parent: Link        '父链接
+    + child: Link         '子链接
+    ..运动属性..
+    + axis: Vector3       '旋转或移动轴
+    + limit: JointLimit   '运动限制
+    + dynamics: Dynamics  '动力学参数
+    + calibration: Calibration '校准参数
+    + mimic: Mimic       '从动关节设置
+    + safety_controller: SafetyController '安全控制器
+    ..说明..
+    定义两个link之间的运动关系，
+    包括运动类型、范围和限制
+}
+
+class visual <<Optional>> {
+    + origin: Origin      '位置和方向
+    + geometry: Geometry  '几何形状
+    + material: Material  '材质
+    ..说明..
+    定义链接的视觉外观，
+    用于3D显示
+}
+
+class collision <<Optional>> {
+    + origin: Origin      '位置和方向
+    + geometry: Geometry  '几何形状
+    ..说明..
+    定义用于碰撞检测的形状，
+    可能与视觉形状不同
+}
+
+class inertial <<Optional>> {
+    + origin: Origin      '重心位置
+    + mass: Double        '质量
+    + inertia: Matrix3x3  '惯性矩阵
+    ..说明..
+    定义链接的物理属性，
+    用于动力学计算
+}
+
+class geometry <<Required>> {
+    + {abstract} shape    '形状类型
+    ..说明..
+    几何形状的抽象类，
+    可以是以下具体形状之一
+}
+
+class material <<Optional>> {
+    + name: String     '材质名称
+    + color: RGBA      '颜色（RGBA）
+    + texture: String  '纹理文件
+    ..说明..
+    定义视觉外观的材质属性
+}
+
+class origin <<Optional>> {
+    + xyz: Vector3    '位置坐标(x,y,z)
+    + rpy: Vector3    '欧拉角(roll,pitch,yaw)
+    ..说明..
+    定义部件在空间中的位置和方向
+}
+
+class mesh <<Optional>> {
+    + filename: String  '模型文件路径
+    + scale: Vector3    '缩放比例
+    ..说明..
+    使用外部3D模型文件
+    支持STL、DAE等格式
+}
+
+class box <<Optional>> {
+    + size: Vector3    '长宽高
+    ..说明..
+    简单的立方体形状
+}
+
+class cylinder <<Optional>> {
+    + radius: Double   '半径
+    + length: Double   '长度
+    ..说明..
+    圆柱体形状
+}
+
+class sphere <<Optional>> {
+    + radius: Double   '半径
+    ..说明..
+    球体形状
+}
+
+enum JointType <<Required>> {
+    FIXED      '固定关节：无运动自由度
+    REVOLUTE   '旋转关节：有角度限制
+    CONTINUOUS '连续旋转：无角度限制
+    PRISMATIC  '移动关节：直线运动
+    FLOATING   '浮动关节：6自由度
+    PLANAR     '平面关节：平面内运动
+}
+
+note right of robot
+  <b>根元素</b>
+  每个URDF文件必须有一个robot元素，
+  它包含了机器人的所有组成部分
+end note
+
+note right of link
+  <b>基本构件</b>
+  机器人的基本组成单位，
+  每个link代表一个刚体部分
+end note
+
+note right of joint
+  <b>运动关节</b>
+  定义link之间的连接和运动关系，
+  决定了机器人的运动能力
+end note
+
+note right of geometry
+  <b>几何形状</b>
+  可以使用简单形状（球体、圆柱体等）
+  或复杂的3D模型文件（mesh）
+end note
+
+' 关系
+robot "1" *-- "1..*" link : 包含 >
+robot "1" *-- "0..*" joint : 包含 >
+link "1" *-- "0..*" visual : 具有 >
+link "1" *-- "0..*" collision : 具有 >
+link "1" *-- "0..1" inertial : 具有 >
+visual "1" *-- "1" geometry : 必需 >
+visual "1" *-- "0..1" material : 可选 >
+collision "1" *-- "1" geometry : 必需 >
+joint "1" *-- "1" origin : 具有 >
+visual "1" *-- "0..1" origin : 可选 >
+collision "1" *-- "0..1" origin : 可选 >
+inertial "1" *-- "0..1" origin : 可选 >
+
+geometry <|-- mesh : 继承
+geometry <|-- box : 继承
+geometry <|-- cylinder : 继承
+geometry <|-- sphere : 继承
+
+legend right
+  |颜色|含义|
+  |<#Pink>|必需元素|
+  |<#LightGreen>|可选元素|
+  --
+  关系说明：
+  * 1..* 表示一个或多个
+  * 0..* 表示零个或多个
+  * 0..1 表示零个或一个
+  * 1 表示必须一个
+endlegend
+
+@enduml 

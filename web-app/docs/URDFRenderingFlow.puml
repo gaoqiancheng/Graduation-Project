@@ -1,0 +1,69 @@
+@startuml URDFRenderingFlow
+
+skinparam backgroundColor white
+skinparam activity {
+    BackgroundColor LightSkyBlue
+    BorderColor DarkSlateGray
+    FontColor DarkSlateGray
+}
+
+title URDF Viewer Rendering Process
+
+|Component Initialization|
+start
+:Mount URDFViewer Component;
+:Create Refs (viewerContainer, loading, error);
+
+|Scene Setup|
+:Initialize Three.js Scene;
+:Create PerspectiveCamera;
+:Setup WebGLRenderer;
+:Add Lights (Ambient & Directional);
+:Add Helpers (Grid & Axes);
+
+|URDF Loading|
+if (Source Type?) then (URL)
+  :Fetch URDF from URL;
+  :Parse URDF Content;
+else (Direct Content)
+  :Use Provided URDF Content;
+endif
+
+|Mesh Loading|
+:Create URDF Loader;
+fork
+  :Load STL Files;
+fork again
+  :Load Collada (DAE) Files;
+end fork
+:Create Materials;
+:Create Meshes;
+
+|Scene Assembly|
+:Add Robot Model to Scene;
+:Calculate Bounding Box;
+:Adjust Camera Position;
+:Set Control Target;
+
+|Render Loop|
+:Start Animation Frame;
+while (Component Mounted?) is (yes)
+  :Update Controls;
+  :Render Scene;
+  :Request Next Frame;
+endwhile (no)
+
+|Cleanup|
+:Dispose Geometries;
+:Dispose Materials;
+:Remove Event Listeners;
+:Clear Scene;
+stop
+
+legend right
+  |Color|Type|
+  |<#LightSkyBlue>| Process Step |
+  |<#White>| Decision Point |
+endlegend
+
+@enduml 

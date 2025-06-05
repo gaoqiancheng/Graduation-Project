@@ -1,6 +1,12 @@
 from flask import Blueprint, request, jsonify, send_file
 from werkzeug.utils import secure_filename
-from ..services.file_service import handle_file_upload, list_files
+from ..services.file_service import (
+    handle_file_upload, 
+    list_files, 
+    handle_folder_upload,
+    process_urdf_content,
+    get_resource_file
+)
 from ..services.urdf_service import save_urdf_file
 import os
 from pathlib import Path
@@ -19,6 +25,18 @@ def upload_endpoint():
         return jsonify({'error': 'No selected file'}), 400
     
     result = handle_file_upload(file)
+    return jsonify(result), result.get('status', 200)
+
+@bp.route('/upload-folder', methods=['POST'])
+def upload_folder_endpoint():
+    if 'files' not in request.files:
+        return jsonify({'error': 'No files uploaded'}), 400
+    
+    files = request.files.getlist('files')
+    if not files:
+        return jsonify({'error': 'No files selected'}), 400
+    
+    result = handle_folder_upload(files)
     return jsonify(result), result.get('status', 200)
 
 @bp.route('/list', methods=['GET'])
@@ -44,10 +62,19 @@ def get_file(filename):
     except Exception as e:
         return jsonify({'error': str(e), 'status': 500}), 500
 
-@bp.route('/<filename>/content', methods=['GET'])
-def get_file_content(filename):
+@bp.route('/<path:file_path>/content', methods=['GET'])
+def get_file_content(file_path):
+    """获取文件内容"""
     try:
-        file_path = Path(current_app.config['UPLOAD_FOLDER']) / filename
+        upload_folder = Path(current_app.config['UPLOAD_FOLDER'])
+        file_path = upload_folder / file_path
+        
+        # 安全检查：确保路径不会超出上传文件夹
+        try:
+            file_path.relative_to(upload_folder)
+        except ValueError:
+            return jsonify({'error': 'Invalid file path'}), 400
+        
         if not file_path.exists():
             return jsonify({'error': 'File not found'}), 404
         
@@ -56,7 +83,7 @@ def get_file_content(filename):
         
         return jsonify({
             'content': content,
-            'filename': filename
+            'filename': os.path.basename(file_path)
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -74,3 +101,49 @@ def save_urdf():
         return jsonify(result), result.get('status', 200)
     except Exception as e:
         return jsonify({'error': str(e), 'status': 500}), 500
+
+@bp.route('/<path:file_path>/urdf', methods=['GET'])
+def get_processed_urdf(file_path):
+    """获取处理后的URDF文件内容"""
+    try:
+        upload_folder = Path(current_app.config['UPLOAD_FOLDER'])
+        file_path = upload_folder / file_path
+        
+        # 安全检查
+        try:
+            file_path.relative_to(upload_folder)
+        except ValueError:
+            return jsonify({'error': 'Invalid file path'}), 400
+            
+        if not file_path.exists():
+            return jsonify({'error': 'File not found'}), 404
+            
+        if not file_path.name.lower().endswith('.urdf'):
+            return jsonify({'error': 'Not a URDF file'}), 400
+        
+        # 处理URDF文件
+        result = process_urdf_content(file_path)
+        return jsonify(result), result.get('status', 200)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/resource/<path:resource_path>', methods=['GET'])
+def get_resource(resource_path):
+    """获取资源文件（mesh等）"""
+    result = get_resource_file(resource_path)
+    
+    if result.get('status') != 200:
+        return jsonify({'error': result.get('error')}), result.get('status')
+    
+    try:
+        response = send_file(
+            result['file_path'],
+            mimetype=result['content_type'],
+            as_attachment=False
+        )
+        print(f">>> Resource sent successfully: {resource_path}")
+        return response
+    except Exception as e:
+        print(f">>> Failed to send resource: {str(e)}")
+        return jsonify({'error': str(e)}), 500
